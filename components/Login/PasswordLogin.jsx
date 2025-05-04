@@ -7,6 +7,15 @@ const PasswordLogin = () => {
   const { login, setLoginMethod } = useUserContext();
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!userId || !password) {
+      alert("请输入用户名和密码");
+      return;
+    }
+    if (password !== "123456") {
+      alert("密码错误，请重新输入");
+      return;
+    }
+
     login(userId, "小白");
   };
 

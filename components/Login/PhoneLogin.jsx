@@ -1,15 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
+
 import { useUserContext } from "@/context/UserContext";
+
 const PhoneLogin = () => {
-  const [phone, setPhone] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [countdown, setCountdown] = useState(0);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [inputCode, setInputCode] = useState("");
+  const [timer, setTimer] = useState(0);
   const { login } = useUserContext();
-  const handleLogin = (e) => {
-    e.preventDefault();
-    login(phone, "小白");
-  };
+  const [generatedCode, setGeneratedCode] = useState("");
 
   const sendVerifyCode = async () => {
     const response = await fetch("/api/users/sendVerifyCode", {
@@ -17,29 +16,47 @@ const PhoneLogin = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phoneNumber }),
     });
     console.log("response", response);
-    // if (!response.ok) {
-    //   alert("验证码发送失败，请稍后再试");
-    //   return;
-    // }
     const data = await response.json();
+    alert(data.message);
     console.log("data", data);
+    setGeneratedCode(data.verifyCode);
     return response;
   };
 
-  const sendVerificationCode = () => {
-    if (!phone) {
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!phoneNumber) {
       alert("请输入手机号码");
       return;
     }
-    const response = sendVerifyCode();
+    if (!inputCode) {
+      alert("请输入验证码");
+      return;
+    }
+ 
+    if (inputCode !== generatedCode) {
+      alert("验证码错误，请重新输入");
+      return;
+    }
+    login(phoneNumber, "小白");
+  };
+
+  const sendVerificationCode = async () => {
+    if (!phoneNumber) {
+      alert("请输入手机号码");
+      return;
+    }
+    if (timer > 0) return;
+
+    const response = await sendVerifyCode();
     if (!response) return;
-    if (countdown > 0) return;
-    setCountdown(60);
+
+    setTimer(60);
     const interval = setInterval(() => {
-      setCountdown((prev) => {
+      setTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           return 0;
@@ -55,24 +72,24 @@ const PhoneLogin = () => {
         type="tel"
         placeholder="手机号码"
         className="w-full p-2 mb-4 border rounded"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        value={phoneNumber}
+        onChange={(e) => setPhoneNumber(e.target.value)} // 修改为 setPhoneNumber
       />
       <div className="flex mb-4">
         <input
           type="text"
           placeholder="验证码"
           className="flex-grow p-2 border rounded-l"
-          value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value)}
+          value={inputCode}
+          onChange={(e) => setInputCode(e.target.value)} // 修改为 setInputCode
         />
         <button
           type="button"
-          className="bg-red-500 text-white p-2 rounded-r  w-24"
+          className="bg-red-500 text-white p-2 rounded-r w-24"
           onClick={sendVerificationCode}
-          disabled={countdown > 0}
+          disabled={timer > 0}
         >
-          {countdown > 0 ? `${countdown}s` : "发送验证码"}
+          {timer > 0 ? `${timer}s` : "发送验证码"}
         </button>
       </div>
       <button
